@@ -1,12 +1,48 @@
+import Foundation
 import SwiftUI
 import WidgetKit
+
+struct CodexEntry: TimelineEntry {
+  let date: Date
+  let snapshot: WidgetSnapshot
+  let status: WidgetCodexSummary?
+}
+
+struct CodexProvider: TimelineProvider {
+  private static let statusURL = URL(string: "https://ios.ncls.cc/status.json")!
+  private static let refreshInterval: TimeInterval = 3 * 60
+
+  func placeholder(in context: Context) -> CodexEntry {
+    CodexEntry(date: Date(), snapshot: .placeholder, status: nil)
+  }
+
+  func getSnapshot(in context: Context, completion: @escaping (CodexEntry) -> Void) {
+    let snapshot = context.isPreview ? WidgetSnapshot.placeholder : SharedStore.loadSnapshot()
+    completion(CodexEntry(date: Date(), snapshot: snapshot, status: snapshot.codex))
+  }
+
+  func getTimeline(in context: Context, completion: @escaping (Timeline<CodexEntry>) -> Void) {
+    let snapshot = SharedStore.loadSnapshot()
+    var request = URLRequest(url: Self.statusURL)
+    request.timeoutInterval = 10
+    URLSession.shared.dataTask(with: request) { data, response, _ in
+      let validResponse = (response as? HTTPURLResponse)?.statusCode == 200
+      let remote = validResponse ? data.flatMap {
+        try? JSONDecoder().decode(WidgetCodexSummary.self, from: $0)
+      } : nil
+      let now = Date()
+      let entry = CodexEntry(date: now, snapshot: snapshot, status: remote ?? snapshot.codex)
+      completion(Timeline(entries: [entry], policy: .after(now.addingTimeInterval(Self.refreshInterval))))
+    }.resume()
+  }
+}
 
 /** Redacted quotas from the most recent authenticated app refresh. */
 struct CodexWidget: Widget {
   static let kind = "TermixCodexWidget"
 
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: Self.kind, provider: TermixProvider()) { entry in
+    StaticConfiguration(kind: Self.kind, provider: CodexProvider()) { entry in
       CodexWidgetView(entry: entry)
     }
     .configurationDisplayName("Codex NCLS")
@@ -99,25 +135,27 @@ private struct CodexProfileView: View {
 
 struct CodexWidgetView: View {
   @Environment(\.widgetFamily) private var family
-  let entry: TermixEntry
+  let entry: CodexEntry
 
   private var snapshot: WidgetSnapshot { entry.snapshot }
   private var accent: Color { Theme.accent(snapshot.accent) }
   private var isStale: Bool {
-    guard let status = snapshot.codex else { return false }
+    guard let status = entry.status else { return false }
     return Date().timeIntervalSince1970 * 1000 - status.checkedAt > 30 * 60 * 1000
   }
 
   var body: some View {
     VStack(alignment: .leading, spacing: family == .systemSmall ? 5 : 8) {
-      WidgetHeader(snapshot: snapshot, accent: accent)
-      if snapshot.state == .signedOut {
-        Spacer(minLength: 0)
-        Text("Open Termix to sign in")
-          .font(Theme.mono(11, weight: .semibold))
-          .foregroundColor(Theme.textSecondary)
-        Spacer(minLength: 0)
-      } else if let status = snapshot.codex {
+      HStack(spacing: 5) {
+        Rectangle().fill(accent).frame(width: 3, height: 11)
+        Text("DEVHUB · CODEX")
+          .font(Theme.label(9))
+          .foregroundColor(Theme.textPrimary)
+        Spacer(minLength: 2)
+        Circle().fill(entry.status == nil || isStale ? Theme.offline : Theme.online)
+          .frame(width: 5, height: 5)
+      }
+      if let status = entry.status {
         if family == .systemSmall {
           VStack(spacing: 5) {
             CodexProfileView(name: "Codex", profile: status.codex, compact: true, accent: accent)
@@ -132,7 +170,7 @@ struct CodexWidgetView: View {
         Spacer(minLength: 0)
         HStack {
           if isStale {
-            Text("STALE · OPEN TO REFRESH")
+            Text("STALE DATA")
               .foregroundColor(Theme.offline)
           } else {
             Text("CHECKED \(relativeAge(from: Date(timeIntervalSince1970: status.checkedAt / 1000))) AGO")
@@ -143,7 +181,7 @@ struct CodexWidgetView: View {
         .font(Theme.mono(8))
       } else {
         Spacer(minLength: 0)
-        Text("Open Sessions to load Codex status")
+        Text("Status unavailable")
           .font(Theme.mono(11, weight: .semibold))
           .foregroundColor(Theme.textSecondary)
         Spacer(minLength: 0)
