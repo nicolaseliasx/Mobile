@@ -21,6 +21,7 @@ export {
 export {
   publishHostSnapshot,
   publishSnippetSnapshot,
+  publishCodexStatus,
   publishSignedOutSnapshot,
   republishWithPreferences,
   resetWidgets,

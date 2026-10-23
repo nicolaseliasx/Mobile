@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 /**
  Reads the snapshot the app writes into the shared App Group container.
@@ -14,13 +15,14 @@ enum SharedStore {
   private static let appGroupInfoKey = "TermixWidgetsAppGroup"
 
   static var appGroupId: String? {
-    guard
-      let value = Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String,
-      !value.isEmpty
-    else {
-      return nil
-    }
-    return value
+    guard let task = SecTaskCreateFromSelf(nil),
+      let groups = SecTaskCopyValueForEntitlement(
+        task, "com.apple.security.application-groups" as CFString, nil
+      ) as? [String] else { return nil }
+    let configured = Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String
+    return groups.first(where: { $0 == configured })
+      ?? groups.first(where: { $0.hasSuffix(".widgets") })
+      ?? groups.first
   }
 
   /// Whether the app has ever written a snapshot into the shared container.

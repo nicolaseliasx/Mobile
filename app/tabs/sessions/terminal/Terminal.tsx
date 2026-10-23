@@ -160,7 +160,9 @@ const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
       "connecting" | "connected" | "reconnecting" | "disconnected" | "failed";
     const [connectionState, setConnectionState] =
       useState<ConnectionState>("connecting");
-    const [persistentRole, setPersistentRole] = useState<"viewer" | "writer">("viewer");
+    const [persistentRole, setPersistentRole] = useState<"viewer" | "writer">(
+      "viewer",
+    );
     const [retryCount, setRetryCount] = useState(0);
     const [hasReceivedData, setHasReceivedData] = useState(false);
     const [htmlContent, setHtmlContent] = useState("");
@@ -1513,18 +1515,38 @@ const TerminalComponent = forwardRef<TerminalHandle, TerminalProps>(
           backgroundColor: terminalBackgroundColor,
         }}
       >
-        {persistentSessionId && isVisible && connectionState === "connected" && (
-          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingVertical: 6, backgroundColor: BACKGROUNDS.CARD }}>
-            <Text style={{ color: "#ffffff", flex: 1, fontSize: 12 }}>
-              {persistentRole === "writer" ? "Controlando a sessão" : "Somente leitura"}
-            </Text>
-            {persistentRole === "viewer" && (
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Assumir controle da sessão" onPress={() => wsManagerRef.current?.takePersistentControl()}>
-                <Text style={{ color: ACCENT, fontSize: 12, fontWeight: "600" }}>Assumir controle</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
+        {persistentSessionId &&
+          isVisible &&
+          connectionState === "connected" && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                backgroundColor: BACKGROUNDS.CARD,
+              }}
+            >
+              <Text style={{ color: "#ffffff", flex: 1, fontSize: 12 }}>
+                {persistentRole === "writer"
+                  ? "Controlando a sessão"
+                  : "Somente leitura"}
+              </Text>
+              {persistentRole === "viewer" && (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel="Assumir controle da sessão"
+                  onPress={() => wsManagerRef.current?.takePersistentControl()}
+                >
+                  <Text
+                    style={{ color: ACCENT, fontSize: 12, fontWeight: "600" }}
+                  >
+                    Assumir controle
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         <View
           style={{
             flex: 1,

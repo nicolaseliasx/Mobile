@@ -115,6 +115,8 @@ const shapes = [
   { ts: "WidgetSummary", native: "HostSummary" },
   { ts: "WidgetHostEntry", native: "HostEntry" },
   { ts: "WidgetSnippetEntry", native: "SnippetEntry" },
+  { ts: "WidgetCodexProfile", native: "WidgetCodexProfile" },
+  { ts: "WidgetCodexSummary", native: "WidgetCodexSummary" },
 ];
 
 for (const shape of shapes) {
@@ -180,6 +182,16 @@ assert(
     ),
   ),
   "app.json must include ./plugins/withTermixWidgets.js",
+);
+assert(
+  appJson.expo?.scheme === "termix-mobile",
+  "app.json scheme must match the native widget links and OIDC callback",
+);
+assert(
+  read(widgetModule, "ios", "widget", "TermixWidgetBundle.swift").includes(
+    "CodexWidget()",
+  ),
+  "TermixWidgetBundle must expose the Codex widget",
 );
 
 console.log(

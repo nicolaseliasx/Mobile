@@ -15,6 +15,7 @@ import {
   buildWidgetLink,
   buildWidgetSnippetLink,
   type WidgetHostEntry,
+  type WidgetCodexSummary,
   type WidgetHostStatus,
   type WidgetPreferences,
   type WidgetSnapshot,
@@ -41,6 +42,7 @@ export interface BuildSnapshotInput {
   serverUrl?: string | null;
   /** Whether the user is signed in. Drives the "signed-out" state. */
   authenticated: boolean;
+  codex?: WidgetCodexSummary | null;
   /** Injected for deterministic tests. */
   now?: number;
 }
@@ -203,6 +205,7 @@ export function buildSignedOutSnapshot(
     summary: { total: 0, online: 0, offline: 0, unknown: 0 },
     hosts: [],
     snippets: [],
+    codex: null,
   };
 }
 
@@ -220,6 +223,7 @@ export function buildWidgetSnapshot(input: BuildSnapshotInput): WidgetSnapshot {
     accent,
     serverUrl,
     authenticated,
+    codex = null,
     now = Date.now(),
   } = input;
 
@@ -265,6 +269,7 @@ export function buildWidgetSnapshot(input: BuildSnapshotInput): WidgetSnapshot {
     summary,
     hosts: visible,
     snippets: visibleSnippets,
+    codex,
   };
 }
 

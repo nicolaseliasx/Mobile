@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   SessionType,
   useTerminalSessions,
@@ -72,6 +72,7 @@ type ActiveModifiers = {
 export default function Sessions() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { overview } = useLocalSearchParams<{ overview?: string }>();
   const { height, isLandscape } = useOrientation();
   const isIPad = Platform.OS === "ios" && Platform.isPad;
   const {
@@ -90,6 +91,9 @@ export default function Sessions() {
   } = useTerminalSessions();
 
   const [showConnectionsPanel, setShowConnectionsPanel] = useState(false);
+  useEffect(() => {
+    if (overview === "1") setShowConnectionsPanel(true);
+  }, [overview]);
   const { keyboardHeight, isKeyboardVisible } = useKeyboard();
   const hiddenInputRef = useRef<TerminalImeInputHandle | null>(null);
   const terminalRefs = useRef<Record<string, React.RefObject<TerminalHandle>>>(

@@ -134,7 +134,9 @@ test("persistent session attaches as viewer and detaches without killing tmux", 
   assert.equal(socket.sent.length, 1);
   f.manager.takePersistentControl();
   assert.equal(socket.sent[1].type, "persistent_take_control");
-  socket.onmessage({ data: JSON.stringify({ type: "persistent_control_changed" }) });
+  socket.onmessage({
+    data: JSON.stringify({ type: "persistent_control_changed" }),
+  });
   f.manager.sendInput("after-control");
   assert.equal(socket.sent[2].type, "input");
   assert.deepEqual(roles, ["viewer", "writer"]);

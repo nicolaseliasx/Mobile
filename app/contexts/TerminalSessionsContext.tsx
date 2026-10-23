@@ -198,7 +198,9 @@ export const TerminalSessionsProvider: React.FC<
         );
 
         const typeLabel = getSessionTypeLabel(type, opts?.remoteProtocol);
-        let title = opts?.persistentDisplayName ?? (typeLabel ? `${host.name} - ${typeLabel}` : host.name);
+        let title =
+          opts?.persistentDisplayName ??
+          (typeLabel ? `${host.name} - ${typeLabel}` : host.name);
         if (existingSessions.length > 0) {
           title = typeLabel
             ? `${host.name} - ${typeLabel} (${existingSessions.length + 1})`

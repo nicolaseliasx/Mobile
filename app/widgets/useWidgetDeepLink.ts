@@ -36,7 +36,7 @@ const ALLOWED_SESSION_TYPES: SessionType[] = [
 ];
 
 interface WidgetLink {
-  action: "connect" | "snippet" | "snippets" | "open";
+  action: "connect" | "snippet" | "snippets" | "sessions" | "open";
   hostId?: number;
   snippetId?: number;
   type: SessionType;
@@ -61,6 +61,10 @@ export function parseWidgetLink(url: string): WidgetLink | null {
   // The snippets list, opened without copying anything.
   if (action === "snippets") {
     return { action: "snippets", type: "terminal" };
+  }
+
+  if (action === "sessions") {
+    return { action: "sessions", type: "terminal" };
   }
 
   const params = new URLSearchParams(queryPart);
@@ -159,6 +163,11 @@ export function useWidgetDeepLink(): {
 
       if (link.action === "snippets") {
         router.push("/tabs/settings/Snippets" as never);
+        return;
+      }
+
+      if (link.action === "sessions") {
+        router.push("/(tabs)/sessions?overview=1" as never);
         return;
       }
 

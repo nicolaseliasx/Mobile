@@ -36,6 +36,7 @@ enum TermixWidgetBundle {
     var body: some Widget {
       ConfigurableQuickConnectWidget()
       ConfigurableStatusWidget()
+      CodexWidget()
       // Snippets are not host-specific: the target is chosen in the app when
       // the command runs, so there is nothing to configure here. The modern
       // variant only differs in forcing full-colour rendering.
@@ -49,6 +50,7 @@ struct LegacyBundle: WidgetBundle {
   var body: some Widget {
     QuickConnectWidget()
     StatusWidget()
+    CodexWidget()
     SnippetsWidget()
   }
 }

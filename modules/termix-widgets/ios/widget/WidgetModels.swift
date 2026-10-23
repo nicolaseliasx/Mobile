@@ -141,12 +141,32 @@ struct HostSummary: Codable, Hashable {
   static let zero = HostSummary(total: 0, online: 0, offline: 0, unknown: 0)
 }
 
+struct WidgetCodexProfile: Codable, Hashable {
+  let state: String
+  let remainingPercent: Double?
+  let shortRemainingPercent: Double?
+  let longRemainingPercent: Double?
+  let activeSessionCount: Int
+
+  static let unknown = WidgetCodexProfile(
+    state: "unknown", remainingPercent: nil, shortRemainingPercent: nil,
+    longRemainingPercent: nil, activeSessionCount: 0
+  )
+}
+
+struct WidgetCodexSummary: Codable, Hashable {
+  let checkedAt: Double
+  let codex: WidgetCodexProfile
+  let codex2: WidgetCodexProfile
+}
+
 struct WidgetSnapshot: Codable, Hashable {
   /// Payload version understood by this build. Newer payloads are ignored.
-  static let supportedVersion = 1
+  static let supportedVersion = 2
   static let fallbackLink = URL(string: "termix-mobile://widget/open")!
   /// Opens the snippets list without copying anything.
   static let snippetsLink = URL(string: "termix-mobile://widget/snippets")!
+  static let sessionsLink = URL(string: "termix-mobile://widget/sessions")!
 
   let version: Int
   let updatedAt: Double
@@ -156,9 +176,10 @@ struct WidgetSnapshot: Codable, Hashable {
   let summary: HostSummary
   let hosts: [HostEntry]
   let snippets: [SnippetEntry]
+  let codex: WidgetCodexSummary?
 
   private enum CodingKeys: String, CodingKey {
-    case version, updatedAt, state, accent, server, summary, hosts, snippets
+    case version, updatedAt, state, accent, server, summary, hosts, snippets, codex
   }
 
   init(
@@ -169,7 +190,8 @@ struct WidgetSnapshot: Codable, Hashable {
     server: String,
     summary: HostSummary,
     hosts: [HostEntry],
-    snippets: [SnippetEntry]
+    snippets: [SnippetEntry],
+    codex: WidgetCodexSummary? = nil
   ) {
     self.version = version
     self.updatedAt = updatedAt
@@ -179,6 +201,7 @@ struct WidgetSnapshot: Codable, Hashable {
     self.summary = summary
     self.hosts = hosts
     self.snippets = snippets
+    self.codex = codex
   }
 
   /// Tolerant decoding: a missing collection is empty rather than fatal, so a
@@ -193,6 +216,7 @@ struct WidgetSnapshot: Codable, Hashable {
     summary = try container.decodeIfPresent(HostSummary.self, forKey: .summary) ?? .zero
     hosts = try container.decodeIfPresent([HostEntry].self, forKey: .hosts) ?? []
     snippets = try container.decodeIfPresent([SnippetEntry].self, forKey: .snippets) ?? []
+    codex = try? container.decodeIfPresent(WidgetCodexSummary.self, forKey: .codex)
   }
 
   var updatedDate: Date {
@@ -218,7 +242,8 @@ struct WidgetSnapshot: Codable, Hashable {
       server: server,
       summary: summary,
       hosts: reordered,
-      snippets: snippets
+      snippets: snippets,
+      codex: codex
     )
   }
 

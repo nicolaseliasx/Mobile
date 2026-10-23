@@ -145,7 +145,13 @@ export class NativeWebSocketManager {
     this.awaitingAuthCredentials = false;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
-        this.ws.send(JSON.stringify({ type: this.config.persistentSessionId ? "persistent_detach" : "disconnect" }));
+        this.ws.send(
+          JSON.stringify({
+            type: this.config.persistentSessionId
+              ? "persistent_detach"
+              : "disconnect",
+          }),
+        );
       } catch (_) {}
     }
     this.serverSessionId = null;
@@ -168,7 +174,8 @@ export class NativeWebSocketManager {
   }
 
   sendInput(data: string): void {
-    if (this.config.persistentSessionId && this.persistentRole !== "writer") return;
+    if (this.config.persistentSessionId && this.persistentRole !== "writer")
+      return;
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
         this.ws.send(JSON.stringify({ type: "input", data }));
@@ -177,7 +184,10 @@ export class NativeWebSocketManager {
   }
 
   takePersistentControl(): void {
-    if (this.config.persistentSessionId && this.ws?.readyState === WebSocket.OPEN) {
+    if (
+      this.config.persistentSessionId &&
+      this.ws?.readyState === WebSocket.OPEN
+    ) {
       this.ws.send(JSON.stringify({ type: "persistent_take_control" }));
     }
   }
@@ -411,16 +421,18 @@ export class NativeWebSocketManager {
       if (this.config.persistentSessionId) {
         this.persistentRole = "viewer";
         this.config.onPersistentRoleChange?.("viewer");
-        ws.send(JSON.stringify({
-          type: "persistent_attach",
-          data: {
-            persistentSessionId: this.config.persistentSessionId,
-            clientId: this.persistentClientId,
-            role: "viewer",
-            cols: this.cols,
-            rows: this.rows,
-          },
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "persistent_attach",
+            data: {
+              persistentSessionId: this.config.persistentSessionId,
+              clientId: this.persistentClientId,
+              role: "viewer",
+              cols: this.cols,
+              rows: this.rows,
+            },
+          }),
+        );
       } else if (this.serverSessionId) {
         this.pendingReattach = true;
         ws.send(
@@ -591,7 +603,9 @@ export class NativeWebSocketManager {
           this.persistentRole = "viewer";
           this.config.onPersistentRoleChange?.("viewer");
         } else if (msg.type === "persistent_error") {
-          this.notifyFailureOnce((msg.message as string) || "Persistent session unavailable");
+          this.notifyFailureOnce(
+            (msg.message as string) || "Persistent session unavailable",
+          );
         } else if (msg.type === "disconnected") {
           this.setServerSessionId(null);
           this.config.onDisconnected(this.config.hostConfig.name);

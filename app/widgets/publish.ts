@@ -20,6 +20,7 @@ import {
 import { DEFAULT_ACCENT, STORAGE_KEYS } from "@/app/constants/theme";
 import { systemLogger } from "@/lib/frontend-logger";
 import type { SSHHost, ServerStatus, Snippet } from "@/types";
+import type { CodexServerStatus } from "@/app/main-axios";
 import {
   buildSignedOutSnapshot,
   buildWidgetSnapshot,
@@ -27,7 +28,8 @@ import {
   type WidgetMetricsEntry,
 } from "./snapshot";
 import { loadWidgetPreferences } from "./preferences";
-import type { WidgetSnapshot } from "./types";
+import type { WidgetCodexSummary, WidgetSnapshot } from "./types";
+import { toWidgetCodexSummary } from "./codex";
 
 /**
  * Minimum gap between writes that carry the same content. Widget hosts wake a
@@ -48,6 +50,7 @@ interface SnapshotSource {
   snippets: Snippet[];
   serverUrl: string | null;
   authenticated: boolean;
+  codex: WidgetCodexSummary | null;
 }
 
 const EMPTY_SOURCE: SnapshotSource = {
@@ -57,6 +60,7 @@ const EMPTY_SOURCE: SnapshotSource = {
   snippets: [],
   serverUrl: null,
   authenticated: false,
+  codex: null,
 };
 
 let source: SnapshotSource = EMPTY_SOURCE;
@@ -121,6 +125,7 @@ async function rebuild(force: boolean): Promise<void> {
     accent,
     serverUrl: source.serverUrl,
     authenticated: source.authenticated,
+    codex: source.codex,
   });
   await write(snapshot, force);
 }
@@ -177,6 +182,26 @@ export async function publishSnippetSnapshot(
       await rebuild(false);
     } catch (error) {
       logFailure("[widgets] failed to publish snippets", error);
+    }
+  });
+}
+
+/** Mirrors only redacted status into the native widget. A failed fetch clears stale quotas. */
+export async function publishCodexStatus(
+  status: CodexServerStatus | null,
+): Promise<void> {
+  if (!isWidgetSupported) return;
+  return enqueue(async () => {
+    try {
+      source = {
+        ...source,
+        authenticated: true,
+        codex: toWidgetCodexSummary(status),
+      };
+      sourcePopulated = true;
+      await rebuild(false);
+    } catch (error) {
+      logFailure("[widgets] failed to publish Codex status", error);
     }
   });
 }

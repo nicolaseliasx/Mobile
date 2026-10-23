@@ -1,4 +1,5 @@
 import ExpoModulesCore
+import Security
 import WidgetKit
 
 /**
@@ -42,13 +43,14 @@ public class TermixWidgetsModule: Module {
 
   /// App Group identifier the extension and the app share.
   private static var appGroupId: String? {
-    guard
-      let value = Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String,
-      !value.isEmpty
-    else {
-      return nil
-    }
-    return value
+    guard let task = SecTaskCreateFromSelf(nil),
+      let groups = SecTaskCopyValueForEntitlement(
+        task, "com.apple.security.application-groups" as CFString, nil
+      ) as? [String] else { return nil }
+    let configured = Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String
+    return groups.first(where: { $0 == configured })
+      ?? groups.first(where: { $0.hasSuffix(".widgets") })
+      ?? groups.first
   }
 
   /// Widgets need both WidgetKit (iOS 14+) and a configured App Group.

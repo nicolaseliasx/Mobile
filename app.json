@@ -2,10 +2,10 @@
   "expo": {
     "name": "Termix NCLS",
     "slug": "termix-ncls",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "termix-ncls",
+    "scheme": "termix-mobile",
     "githubUrl": "https://github.com/nicolaseliasx/Mobile",
     "backgroundColor": "#0c0d0b",
     "userInterfaceStyle": "automatic",
@@ -13,6 +13,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cc.ncls.termix.mobile",
+      "buildNumber": "2",
       "icon": {
         "dark": "./assets/images/ios-dark.png",
         "light": "./assets/images/icon.png",
@@ -73,6 +74,7 @@
       "./plugins/withNetworkSecurityConfig.js",
       "./plugins/withAndroidLocalNetworkSsl.js",
       "./plugins/withPodDeploymentTarget.js",
+      "./plugins/withTermixWidgets.js",
       "expo-dev-client",
       "expo-secure-store",
       "expo-web-browser"

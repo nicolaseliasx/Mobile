@@ -107,6 +107,20 @@ data class HostSummary(
   val unknown: Int = 0
 )
 
+data class WidgetCodexProfile(
+  val state: String,
+  val remainingPercent: Double?,
+  val shortRemainingPercent: Double?,
+  val longRemainingPercent: Double?,
+  val activeSessionCount: Int
+)
+
+data class WidgetCodexSummary(
+  val checkedAt: Long,
+  val codex: WidgetCodexProfile,
+  val codex2: WidgetCodexProfile
+)
+
 data class WidgetSnapshot(
   val version: Int,
   val updatedAt: Long,
@@ -115,11 +129,12 @@ data class WidgetSnapshot(
   val server: String,
   val summary: HostSummary,
   val hosts: List<HostEntry>,
-  val snippets: List<SnippetEntry>
+  val snippets: List<SnippetEntry>,
+  val codex: WidgetCodexSummary?
 ) {
   companion object {
     /** Payload version this build understands. Mirrors SNAPSHOT_VERSION in TS. */
-    const val SUPPORTED_VERSION = 1
+    const val SUPPORTED_VERSION = 2
 
     const val FALLBACK_URL = "termix-mobile://widget/open"
     val FALLBACK_URI: Uri = Uri.parse(FALLBACK_URL)
@@ -134,7 +149,8 @@ data class WidgetSnapshot(
       server = "",
       summary = HostSummary(),
       hosts = emptyList(),
-      snippets = emptyList()
+      snippets = emptyList(),
+      codex = null
     )
 
     /**
@@ -206,7 +222,16 @@ data class WidgetSnapshot(
           server = root.optString("server", ""),
           summary = summary,
           hosts = hosts,
-          snippets = snippets
+          snippets = snippets,
+          codex = root.optJSONObject("codex")?.let { data ->
+            val codex = data.optJSONObject("codex")?.toCodexProfile()
+            val codex2 = data.optJSONObject("codex2")?.toCodexProfile()
+            if (codex == null || codex2 == null) null else WidgetCodexSummary(
+              checkedAt = data.optLong("checkedAt", 0),
+              codex = codex,
+              codex2 = codex2
+            )
+          }
         )
       }.getOrElse { signedOut() }
     }
@@ -218,5 +243,19 @@ data class WidgetSnapshot(
       if (value.isNaN()) return null
       return value.toInt().coerceIn(0, 100)
     }
+
+    private fun JSONObject.optNullableDouble(key: String): Double? {
+      if (isNull(key)) return null
+      val value = optDouble(key, Double.NaN)
+      return if (value.isFinite()) value.coerceIn(0.0, 100.0) else null
+    }
+
+    private fun JSONObject.toCodexProfile() = WidgetCodexProfile(
+      state = optString("state", "unknown"),
+      remainingPercent = optNullableDouble("remainingPercent"),
+      shortRemainingPercent = optNullableDouble("shortRemainingPercent"),
+      longRemainingPercent = optNullableDouble("longRemainingPercent"),
+      activeSessionCount = optInt("activeSessionCount", 0).coerceAtLeast(0)
+    )
   }
 }

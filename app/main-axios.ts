@@ -4307,18 +4307,24 @@ export interface CodexServerStatus {
   profiles: { codex: CodexProfileStatus; codex2: CodexProfileStatus };
 }
 
-export async function getPersistentSessions(): Promise<PersistentSessionInfo[]> {
+export async function getPersistentSessions(): Promise<
+  PersistentSessionInfo[]
+> {
   const response = await authApi.get("/api/v1/persistent-sessions", {
     params: { limit: 100 },
   });
   const data = response.data?.data;
-  if (!Array.isArray(data)) throw new Error("Invalid persistent sessions response");
+  if (!Array.isArray(data))
+    throw new Error("Invalid persistent sessions response");
   return data;
 }
 
-export async function getCodexServerStatus(hostId: number): Promise<CodexServerStatus> {
+export async function getCodexServerStatus(
+  hostId: number,
+): Promise<CodexServerStatus> {
   const response = await authApi.get(`/api/v1/hosts/${hostId}/codex-status`);
-  if (!response.data?.data?.profiles) throw new Error("Invalid Codex status response");
+  if (!response.data?.data?.profiles)
+    throw new Error("Invalid Codex status response");
   return response.data.data;
 }
 

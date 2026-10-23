@@ -43,6 +43,15 @@ jobs:
           from pathlib import Path
           app = next(Path('Payload').glob('*.app'))
           info = plistlib.loads((app / 'Info.plist').read_bytes())
+          assert info['CFBundleIdentifier'] == 'cc.ncls.termix.mobile'
+          assert any('termix-mobile' in item.get('CFBundleURLSchemes', [])
+                     for item in info.get('CFBundleURLTypes', [])), 'widget deep-link scheme missing'
+          extensions = list((app / 'PlugIns').glob('*.appex'))
+          assert len(extensions) == 1, f'expected one WidgetKit extension, got {len(extensions)}'
+          widget = plistlib.loads((extensions[0] / 'Info.plist').read_bytes())
+          assert widget['CFBundleIdentifier'] == 'cc.ncls.termix.mobile.widgets'
+          assert (extensions[0] / 'TermixWidgetsExtension').exists(), 'widget binary missing'
+          assert widget['NSExtension']['NSExtensionPointIdentifier'] == 'com.apple.widgetkit-extension'
           ipa = Path('termix-ncls.ipa')
           metadata = {
               'bundleIdentifier': info['CFBundleIdentifier'],
@@ -50,6 +59,7 @@ jobs:
               'build': info['CFBundleVersion'],
               'sizeBytes': ipa.stat().st_size,
               'sha256': hashlib.sha256(ipa.read_bytes()).hexdigest(),
+              'widgetBundleIdentifier': widget['CFBundleIdentifier'],
           }
           Path('termix-ncls.json').write_text(json.dumps(metadata, indent=2) + '\n')
           PY

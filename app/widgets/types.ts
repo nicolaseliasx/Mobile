@@ -15,7 +15,7 @@
  */
 
 /** Payload format version. Bump on breaking changes to WidgetSnapshot. */
-export const SNAPSHOT_VERSION = 1;
+export const SNAPSHOT_VERSION = 2;
 
 /** URL scheme registered in app.json. */
 export const APP_SCHEME = "termix-mobile";
@@ -83,6 +83,21 @@ export interface WidgetSummary {
   unknown: number;
 }
 
+export interface WidgetCodexProfile {
+  state: "available" | "limited" | "unknown";
+  remainingPercent: number | null;
+  shortRemainingPercent: number | null;
+  longRemainingPercent: number | null;
+  activeSessionCount: number;
+}
+
+export interface WidgetCodexSummary {
+  /** Epoch millis of the actual server check, independent of widget refreshes. */
+  checkedAt: number;
+  codex: WidgetCodexProfile;
+  codex2: WidgetCodexProfile;
+}
+
 export interface WidgetSnapshot {
   version: number;
   /** Epoch millis the snapshot was produced. Widgets show relative freshness. */
@@ -95,6 +110,8 @@ export interface WidgetSnapshot {
   summary: WidgetSummary;
   hosts: WidgetHostEntry[];
   snippets: WidgetSnippetEntry[];
+  /** Only redacted quotas and counts; no credentials or session names. */
+  codex: WidgetCodexSummary | null;
 }
 
 /** Preferences that shape what the widgets are allowed to display. */
@@ -147,4 +164,9 @@ export function buildWidgetOpenLink(): string {
 /** Deep link that opens the snippets list without copying anything. */
 export function buildWidgetSnippetsListLink(): string {
   return `${WIDGET_LINK_PREFIX}/snippets`;
+}
+
+/** Opens the Sessions overview, where live Codex status can be refreshed. */
+export function buildWidgetSessionsLink(): string {
+  return `${WIDGET_LINK_PREFIX}/sessions`;
 }

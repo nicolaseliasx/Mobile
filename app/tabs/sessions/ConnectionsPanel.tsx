@@ -306,10 +306,16 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
         />
       }
     >
-      <PersistentOverview hosts={hosts} refreshKey={overviewRefreshKey} onOpen={onClose} />
+      <PersistentOverview
+        hosts={hosts}
+        refreshKey={overviewRefreshKey}
+        onOpen={onClose}
+      />
       {!hasAny && (
         <View className="items-center px-8 py-4">
-          <Text className="text-center text-xs text-muted-foreground">Abra uma sessão persistente acima ou conecte a um host.</Text>
+          <Text className="text-center text-xs text-muted-foreground">
+            Abra uma sessão persistente acima ou conecte a um host.
+          </Text>
         </View>
       )}
       {sessions.length > 0 ? (
@@ -319,7 +325,9 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
             const live = sessionByInstance.get(s.instanceId);
             const isLive =
               s.type === "terminal"
-                ? (s.persistentSessionId ? true : (live?.isConnected ?? !!s.backendSessionId))
+                ? s.persistentSessionId
+                  ? true
+                  : (live?.isConnected ?? !!s.backendSessionId)
                 : true;
             return (
               <ConnectionRow
