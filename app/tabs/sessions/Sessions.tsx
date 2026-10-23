@@ -661,6 +661,7 @@ export default function Sessions() {
                 title={session.title}
                 tabInstanceId={session.instanceId}
                 initialSessionId={session.restoredSessionId}
+                persistentSessionId={session.persistentSessionId}
                 onSessionIdChange={(backendId) =>
                   setBackendSessionId(session.id, backendId)
                 }

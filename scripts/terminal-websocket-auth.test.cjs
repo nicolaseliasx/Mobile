@@ -42,6 +42,7 @@ function fixture(
   serverUrl = "https://termix.example/base/",
   token = "header.payload.signature",
   generation = "legacy",
+  extraConfig = {},
 ) {
   const sockets = [];
   const timers = new Map();
@@ -51,6 +52,7 @@ function fixture(
     static OPEN = 1;
     static CLOSED = 3;
     readyState = 0;
+    sent = [];
     constructor(url, protocols) {
       this.url = url;
       this.protocols = protocols;
@@ -58,6 +60,9 @@ function fixture(
     }
     close() {
       this.readyState = Socket.CLOSED;
+    }
+    send(data) {
+      this.sent.push(JSON.parse(data));
     }
   }
   const api = {
@@ -89,9 +94,7 @@ function fixture(
           return id;
         },
         clearTimeout: (id) => timers.delete(id),
-        setInterval: () => {
-          throw new Error("No live timers in this test");
-        },
+        setInterval: () => 1,
         clearInterval: () => {},
       },
     );
@@ -103,6 +106,7 @@ function fixture(
     hostConfig: { id: 1, name: "host" },
     onStateChange: () => {},
     onConnectionFailed: (message) => errors.push(message),
+    ...extraConfig,
   });
   return {
     sockets,
@@ -112,6 +116,32 @@ function fixture(
     factory: load(factory.getText(apiSource)).createTerminalWebSocket,
   };
 }
+
+test("persistent session attaches as viewer and detaches without killing tmux", async () => {
+  const roles = [];
+  const f = fixture(undefined, undefined, "legacy", {
+    persistentSessionId: "persistent-123",
+    onPersistentRoleChange: (role) => roles.push(role),
+  });
+  await f.manager.connect(80, 24);
+  const socket = f.sockets[0];
+  socket.readyState = 1;
+  socket.onopen();
+  assert.equal(socket.sent[0].type, "persistent_attach");
+  assert.equal(socket.sent[0].data.persistentSessionId, "persistent-123");
+  assert.equal(socket.sent[0].data.role, "viewer");
+  f.manager.sendInput("before-control");
+  assert.equal(socket.sent.length, 1);
+  f.manager.takePersistentControl();
+  assert.equal(socket.sent[1].type, "persistent_take_control");
+  socket.onmessage({ data: JSON.stringify({ type: "persistent_control_changed" }) });
+  f.manager.sendInput("after-control");
+  assert.equal(socket.sent[2].type, "input");
+  assert.deepEqual(roles, ["viewer", "writer"]);
+  f.manager.destroy();
+  assert.equal(socket.sent[3].type, "persistent_detach");
+  assert.ok(!socket.sent.some((message) => message.type === "disconnect"));
+});
 
 function assertAuthenticated(
   socket,

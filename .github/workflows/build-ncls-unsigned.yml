@@ -1,0 +1,63 @@
+name: Build Termix NCLS unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Generate native project
+        run: npx expo prebuild --platform ios --clean --no-install
+      - name: Install CocoaPods
+        run: pod install --project-directory=ios
+      - name: Build without Apple signing
+        run: |
+          workspace=$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)
+          scheme=$(basename "$workspace" .xcworkspace)
+          xcodebuild -workspace "$workspace" -scheme "$scheme" \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/TermixNCLS.xcarchive" archive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' DEVELOPMENT_TEAM=''
+      - name: Package and describe IPA
+        run: |
+          mkdir -p release/Payload
+          cp -R build/TermixNCLS.xcarchive/Products/Applications/*.app release/Payload/
+          cd release
+          zip -qr termix-ncls.ipa Payload
+          python3 - <<'PY'
+          import hashlib, json, plistlib
+          from pathlib import Path
+          app = next(Path('Payload').glob('*.app'))
+          info = plistlib.loads((app / 'Info.plist').read_bytes())
+          ipa = Path('termix-ncls.ipa')
+          metadata = {
+              'bundleIdentifier': info['CFBundleIdentifier'],
+              'version': info['CFBundleShortVersionString'],
+              'build': info['CFBundleVersion'],
+              'sizeBytes': ipa.stat().st_size,
+              'sha256': hashlib.sha256(ipa.read_bytes()).hexdigest(),
+          }
+          Path('termix-ncls.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: termix-ncls-unsigned
+          path: |
+            release/termix-ncls.ipa
+            release/termix-ncls.json
+          retention-days: 30
+          if-no-files-found: error

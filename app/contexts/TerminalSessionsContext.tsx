@@ -40,6 +40,8 @@ export interface TerminalSession {
   backendSessionId?: string | null;
   /** When set, the terminal should attach to this backend session on connect. */
   restoredSessionId?: string | null;
+  /** Durable tmux session created in the web app. */
+  persistentSessionId?: string;
   /** Selected protocol for remote desktop tabs. */
   remoteProtocol?: RemoteDesktopProtocol;
 }
@@ -112,6 +114,7 @@ interface TerminalSessionsContextType {
     opts?: {
       instanceId?: string;
       restoredSessionId?: string | null;
+      persistentSessionId?: string;
       remoteProtocol?: RemoteDesktopProtocol;
     },
   ) => string;
@@ -179,6 +182,7 @@ export const TerminalSessionsProvider: React.FC<
       opts?: {
         instanceId?: string;
         restoredSessionId?: string | null;
+        persistentSessionId?: string;
         remoteProtocol?: RemoteDesktopProtocol;
       },
     ): string => {
@@ -208,6 +212,7 @@ export const TerminalSessionsProvider: React.FC<
           instanceId,
           backendSessionId: opts?.restoredSessionId ?? null,
           restoredSessionId: opts?.restoredSessionId ?? null,
+          persistentSessionId: opts?.persistentSessionId,
           remoteProtocol: opts?.remoteProtocol,
         };
 

@@ -4282,6 +4282,46 @@ export async function getActiveSessions(): Promise<ActiveSessionInfo[]> {
   }
 }
 
+export interface PersistentSessionInfo {
+  id: string;
+  hostId: number;
+  displayName: string;
+  tmuxSessionName: string;
+  managementState: "managed" | "discovered";
+  endedAt: string | null;
+}
+
+export interface CodexProfileStatus {
+  state: "available" | "limited" | "unknown";
+  remainingPercent: number | null;
+  windows: Array<{
+    name: "primary" | "secondary";
+    remainingPercent: number;
+    resetsAt: number | null;
+  }>;
+  activeSessions: string[];
+}
+
+export interface CodexServerStatus {
+  checkedAt: string;
+  profiles: { codex: CodexProfileStatus; codex2: CodexProfileStatus };
+}
+
+export async function getPersistentSessions(): Promise<PersistentSessionInfo[]> {
+  const response = await authApi.get("/api/v1/persistent-sessions", {
+    params: { limit: 100 },
+  });
+  const data = response.data?.data;
+  if (!Array.isArray(data)) throw new Error("Invalid persistent sessions response");
+  return data;
+}
+
+export async function getCodexServerStatus(hostId: number): Promise<CodexServerStatus> {
+  const response = await authApi.get(`/api/v1/hosts/${hostId}/codex-status`);
+  if (!response.data?.data?.profiles) throw new Error("Invalid Codex status response");
+  return response.data.data;
+}
+
 // ============================================================================
 // DOCKER - session-based container management over SSH.
 //

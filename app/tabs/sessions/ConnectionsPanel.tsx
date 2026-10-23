@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { View, ScrollView, Pressable, RefreshControl } from "react-native";
 import {
-  Plug,
   SquareTerminal,
   FolderOpen,
   Activity,
@@ -28,6 +27,7 @@ import { Text } from "@/app/components/ui";
 import { useThemeColor } from "@/app/contexts/ThemeContext";
 import { SSHHost } from "@/types";
 import { getSSHHosts, deleteOpenTab } from "@/app/main-axios";
+import { PersistentOverview } from "./PersistentOverview";
 
 const TYPE_LABELS: Record<string, string> = {
   terminal: "SSH",
@@ -232,6 +232,7 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
   const [activeSessions, setActiveSessions] = useState<ActiveSessionInfo[]>([]);
   const [hosts, setHosts] = useState<SSHHost[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [overviewRefreshKey, setOverviewRefreshKey] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshRef = useRef(refreshBackgroundTabs);
   refreshRef.current = refreshBackgroundTabs;
@@ -289,26 +290,6 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
 
   const hasAny = sessions.length > 0 || backgroundTabs.length > 0;
 
-  if (!hasAny) {
-    return (
-      <View className="flex-1 items-center justify-center gap-3 px-8">
-        <View className="h-12 w-12 items-center justify-center rounded-full bg-muted/40">
-          <Plug size={22} color={color("muted-foreground", 0.5)} />
-        </View>
-        <Text
-          weight="medium"
-          className="text-center text-sm text-muted-foreground"
-        >
-          No active connections
-        </Text>
-        <Text className="text-center text-xs text-muted-foreground/60">
-          Connect to a host to start a session. Tabs you open on other devices
-          will appear here too.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <ScrollView
       className="flex-1"
@@ -318,12 +299,19 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
           onRefresh={async () => {
             setRefreshing(true);
             await refresh();
+            setOverviewRefreshKey((value) => value + 1);
             setRefreshing(false);
           }}
           tintColor={color("accent-brand")}
         />
       }
     >
+      <PersistentOverview hosts={hosts} refreshKey={overviewRefreshKey} onOpen={onClose} />
+      {!hasAny && (
+        <View className="items-center px-8 py-4">
+          <Text className="text-center text-xs text-muted-foreground">Abra uma sessão persistente acima ou conecte a um host.</Text>
+        </View>
+      )}
       {sessions.length > 0 ? (
         <View>
           <SectionHeader label="Open" count={sessions.length} />
