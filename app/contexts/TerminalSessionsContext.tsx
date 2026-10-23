@@ -42,6 +42,7 @@ export interface TerminalSession {
   restoredSessionId?: string | null;
   /** Durable tmux session created in the web app. */
   persistentSessionId?: string;
+  persistentDisplayName?: string;
   /** Selected protocol for remote desktop tabs. */
   remoteProtocol?: RemoteDesktopProtocol;
 }
@@ -115,6 +116,7 @@ interface TerminalSessionsContextType {
       instanceId?: string;
       restoredSessionId?: string | null;
       persistentSessionId?: string;
+      persistentDisplayName?: string;
       remoteProtocol?: RemoteDesktopProtocol;
     },
   ) => string;
@@ -183,6 +185,7 @@ export const TerminalSessionsProvider: React.FC<
         instanceId?: string;
         restoredSessionId?: string | null;
         persistentSessionId?: string;
+        persistentDisplayName?: string;
         remoteProtocol?: RemoteDesktopProtocol;
       },
     ): string => {
@@ -195,7 +198,7 @@ export const TerminalSessionsProvider: React.FC<
         );
 
         const typeLabel = getSessionTypeLabel(type, opts?.remoteProtocol);
-        let title = typeLabel ? `${host.name} - ${typeLabel}` : host.name;
+        let title = opts?.persistentDisplayName ?? (typeLabel ? `${host.name} - ${typeLabel}` : host.name);
         if (existingSessions.length > 0) {
           title = typeLabel
             ? `${host.name} - ${typeLabel} (${existingSessions.length + 1})`
@@ -213,18 +216,22 @@ export const TerminalSessionsProvider: React.FC<
           backendSessionId: opts?.restoredSessionId ?? null,
           restoredSessionId: opts?.restoredSessionId ?? null,
           persistentSessionId: opts?.persistentSessionId,
+          persistentDisplayName: opts?.persistentDisplayName,
           remoteProtocol: opts?.remoteProtocol,
         };
 
-        // Persist this tab server-side for cross-device awareness.
-        addOpenTab({
-          id: instanceId,
-          tabType: toTabType(type, opts?.remoteProtocol),
-          hostId: host.id,
-          label: title,
-          tabOrder: prev.length,
-          backendSessionId: opts?.restoredSessionId ?? null,
-        });
+        // Persistent sessions have their own cross-device registry. A normal
+        // open-tab record would revive as a new SSH terminal on another device.
+        if (!opts?.persistentSessionId) {
+          addOpenTab({
+            id: instanceId,
+            tabType: toTabType(type, opts?.remoteProtocol),
+            hostId: host.id,
+            label: title,
+            tabOrder: prev.length,
+            backendSessionId: opts?.restoredSessionId ?? null,
+          });
+        }
 
         const updatedSessions = prev.map((session) => ({
           ...session,
@@ -247,7 +254,9 @@ export const TerminalSessionsProvider: React.FC<
       if (!sessionToRemove) return prev;
 
       // Forget the server-side record for this tab.
-      deleteOpenTab(sessionToRemove.instanceId);
+      if (!sessionToRemove.persistentSessionId) {
+        deleteOpenTab(sessionToRemove.instanceId);
+      }
 
       let updatedSessions = prev.filter((session) => session.id !== sessionId);
 

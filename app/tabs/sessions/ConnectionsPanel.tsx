@@ -319,7 +319,7 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
             const live = sessionByInstance.get(s.instanceId);
             const isLive =
               s.type === "terminal"
-                ? (live?.isConnected ?? !!s.backendSessionId)
+                ? (s.persistentSessionId ? true : (live?.isConnected ?? !!s.backendSessionId))
                 : true;
             return (
               <ConnectionRow
@@ -331,7 +331,7 @@ export function ConnectionsPanel({ onClose }: { onClose?: () => void }) {
                     ? (s.remoteProtocol ?? s.type)
                     : s.type
                 }
-                name={s.host.name}
+                name={s.persistentDisplayName ?? s.host.name}
                 subLabel={
                   s.host.username
                     ? `${s.host.username}@${s.host.ip}`

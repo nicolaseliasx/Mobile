@@ -87,7 +87,10 @@ export function PersistentOverview({ hosts, refreshKey, onOpen }: {
     if (!host) return;
     const existing = sessions.find((item) => item.persistentSessionId === record.id);
     if (existing) setActiveSession(existing.id);
-    else addSession(host, "terminal", { persistentSessionId: record.id });
+    else addSession(host, "terminal", {
+      persistentSessionId: record.id,
+      persistentDisplayName: record.displayName,
+    });
     navigateToSessions();
     onOpen?.();
   };
