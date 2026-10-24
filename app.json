@@ -2,7 +2,7 @@
   "expo": {
     "name": "Termix NCLS",
     "slug": "termix-ncls",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "termix-mobile",
@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "cc.ncls.termix.mobile",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "icon": {
         "dark": "./assets/images/ios-dark.png",
         "light": "./assets/images/icon.png",

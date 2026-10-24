@@ -109,8 +109,8 @@ export function useWidgetDeepLink(): {
   const pendingRef = useRef<WidgetLink | null>(null);
   /** Guards against the same URL being delivered twice (listener + initial). */
   const lastHandledRef = useRef<{ url: string; at: number } | null>(null);
-  /** Link seen at startup, held until the navigator can accept it. */
-  const initialUrlRef = useRef<string | null>(null);
+  /** Request the startup link only once, even if the effect re-runs. */
+  const initialUrlRequestedRef = useRef(false);
   /** True once the startup link has been consumed (or found to be absent). */
   const initialDrainedRef = useRef(false);
   /**
@@ -239,37 +239,23 @@ export function useWidgetDeepLink(): {
       handleUrl(event.url);
     });
 
-    if (!initialDrainedRef.current && initialUrlRef.current === null) {
+    if (!initialDrainedRef.current && !initialUrlRequestedRef.current) {
+      initialUrlRequestedRef.current = true;
       void Linking.getInitialURL()
         .then((url) => {
-          initialUrlRef.current = url ?? "";
+          if (initialDrainedRef.current) return;
+          initialDrainedRef.current = true;
+          // The promise may resolve after navigation is already ready. Handle
+          // it here so a ref-only update cannot strand the startup link.
+          handleUrl(url);
         })
         .catch(() => {
-          // No initial URL is the normal case.
-          initialUrlRef.current = "";
+          initialDrainedRef.current = true;
         });
     }
 
     return () => subscription.remove();
   }, [handleUrl]);
-
-  // Drain the startup link once the app can actually act on it.
-  //
-  // Android launches MainActivity as singleTask, so relaunching the app from
-  // the task a widget tap created replays that same intent and getInitialURL
-  // keeps returning it. Consuming it exactly once per process stops a tapped
-  // widget from re-navigating (or re-showing an unmatched route) on every
-  // later launch.
-  useEffect(() => {
-    if (initialDrainedRef.current) return;
-    if (!navigatorReady) return;
-    const url = initialUrlRef.current;
-    if (url === null) return; // getInitialURL still in flight
-    initialDrainedRef.current = true;
-    // handleUrl parks the link when signed out, so a cold start from a widget
-    // still lands on the right screen after sign-in.
-    if (url) handleUrl(url);
-  }, [navigatorReady, handleUrl]);
 
   // Replay a parked link once the user is authenticated and the navigator is up.
   useEffect(() => {

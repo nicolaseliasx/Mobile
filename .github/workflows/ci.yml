@@ -46,6 +46,9 @@ jobs:
       - name: Verify Codex widget redaction and sign-out
         run: node --test scripts/widget-codex.test.cjs
 
+      - name: Verify cold-start widget links
+        run: node --test scripts/widget-deeplink.test.cjs
+
       - name: Verify Android network security config
         run: npm run verify:android-network-security
 
